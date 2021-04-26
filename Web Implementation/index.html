@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Load required Bootstrap and BootstrapVue CSS -->
+    <link type rel="stylesheet" href="//unpkg.com/bootstrap/dist/css/bootstrap.min.css" />
+    <link type rel="stylesheet" href="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.min.css" />
+    <!-- Load polyfills to support older browsers -->
+    <script src="//polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver" crossorigin="anonymous"></script>
+    <!-- Load Vue followed by BootstrapVue -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js"></script>
+    <script src="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.min.js"></script>
+    <!-- Load the following for BootstrapVueIcons support -->
+    <script src="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue-icons.min.js"></script>
+    <title>DBFS</title>
+</head>
+
+<body>
+    <div id="vue-app" class="container-fluid">
+        <h1>Distributed Storage Management System</h1>
+        <p>Configure the following backend endpoint at top of script.js</p>
+        <p><b>SQL Backend:</b> {{ sqlEndpoint }} <b>ORM Backend:</b> {{ ormEndpoint }}</p>
+
+        <section id="section-users">
+            <h2>Users</h2>
+            <form id="form-user" v-on:submit.prevent="addUser()">
+                <label for="input-user-name">Name</label>
+                <input name="input-user-name" id="input-user-name" v-model="forms.addUser.userName" type="text">
+                <button v-bind:disabled="!forms.addUser.enabled" type="submit"> {{ forms.addUser.enabled ? "Add" : "Loading" }}</button>
+            </form>
+            <table id="table-users" class="table table-hover table-sm">
+                <thead>
+                    <tr>
+                        <th>Names</th>
+                        <th>Files</th>
+                        <th>Usage Bytes (Files only)</th>
+                        <th>Usage Bytes (Total with Redundancy)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(user,i) in sortedUsers">
+                        <td>{{ user.name }}</td>
+                        <td>{{ getUserFiles(user).length | commaNumber }}</td>
+                        <td>{{ getUserFileUsage(user) | commaNumber }}</td>
+                        <td>{{ getUserTotalUsage(user) | commaNumber }}</td>
+                        <td><button v-on:click="deleteUser(user, $event)">Delete</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="section-devices">
+            <h2>Devices</h2>
+            <form id="form-devices" onsubmit="return false" v-on:submit="addDevice()">
+                <label for="input-device-name">Name</label>
+                <input name="input-device-name" id="input-device-name" v-model="forms.addDevice.deviceName" type="text">
+                <button type="submit" v-bind:disabled="!forms.addDevice.enabled">Add</button>
+            </form>
+            <div style="margin-left: 32px;" v-for="(device, i) in devices">
+                <h5>
+                    <span><strong>#</strong>{{ i + 1 }}</span>
+                    <span><strong>Name: </strong>{{ device.name }}</span>
+                    <span><strong>Total Capacity Bytes: </strong>{{ getDeviceCapacity(device) | commaNumber }}</span>
+                    <span><strong>Remaining Capacity Bytes: </strong>{{ getDeviceCapacity(device) | commaNumber}}</span>
+                    <!-- <button>Offline</button>
+                    <button>Kill</button> -->
+                </h5>
+
+                <div style="margin-left: 32px;">
+                    <h3>Disks</h3>
+                    <form id="form-disks" onsubmit="return false" v-on:submit="addDisk(device)">
+                        <label for="input-disk-size">Capacity Bytes</label>
+                        <input name="input-disk-size" id="input-disk-size" v-model="forms.addDisk.diskCapacity[device.id]" type="text">
+                        <button type="submit" v-bind:disabled="!forms.addDisk.enabled[device.id] || device.disks.length > 0">Add</button>
+                    </form>
+                    <table class="table table-hover table-sm">
+                        <thead>
+                            <tr>
+                                <th>GUID</th>
+                                <th>Capacity Bytes</th>
+                                <th>Space Remaining</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <tr v-for="(disk, ii) in device.disks">
+                                <td>{{ disk.id }}</td>
+                                <td>{{ disk.capacity | commaNumber }}</td>
+                                <td>{{ getDiskFreeSpace(disk) | commaNumber }}</td>
+                                <td>
+                                    <button v-on:click="offonDisk(disk)" v-if="disk.status !== 'Dead'"> {{ getDiskStatusButtonText(disk) }}</button> 
+                                    <button v-on:click="killDisk(disk)"> {{ disk.status !== "Dead" ? "Kill" : "Disk Dead" }}</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="section-files">
+            <h2>Files</h2>
+            <form id="form-devices" v-on:submit.prevent="addFile($event)">
+                <fieldset :disabled="!canAddFile">
+                    <label for="option-owners">Owner</label>
+                    <select name="option-owners" v-model="forms.addFile.owner">
+                        <option v-bind:value="user.id" v-for="(user, i) in sortedUsers">{{ user.name }}</option>
+                    </select>
+                    <label for="input-file-name">Name</label>
+                    <input name="input-file-name" id="input-files-name" type="text" v-model="forms.addFile.fileName">
+                    <label for="input-file-size">Size Bytes</label>
+                    <input name="input-file-size" id="input-file-size" type="text" v-model="forms.addFile.fileSize">
+                    <label for="input-file-copies">Copies</label>
+                    <select name="input-file-copies" v-model="forms.addFile.copies">
+                        <option v-bind:value="i + 1" v-for="(disk, i) in devices.reduce((a, b) => a + b.disks.filter(x => x.status === 'Online').length, 0)">{{ i + 1 }}</option>
+                    </select>
+                    <button type="submit" v-bind:disabled="!forms.addFile.enabled">Add</button>
+                    <span v-if="users.length == 0">No user available. </span>
+                    <span v-if="!hasDisk">No disk available. </span>
+                </fieldset>
+            </form>
+            <table id="table-files" class="table table-hover table-sm">
+                <thead>
+                    <tr>
+                        <th>File Name</th>
+                        <th>Size</th>
+                        <th>Copies</th>
+                        <th>Owner</th>
+                        <th>Permissions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(file,i) in files">
+                        <td>{{ file.name }}</td>
+                        <td>{{ file.size | commaNumber }}</td>
+                        <td>{{ file.copies }}</td>
+                        <td>{{ file.owner.name }}</td>
+                        <td>{{ file.users.map(x => x.name).join(", ") }}</td>
+                        <td><button @click="viewFileDetail(file)">Details</button> <button @click="deleteFile(file, $event)">Delete</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>Logs</h2>
+
+            <table id="table-logs" class="table table-hover table-sm">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Description</th>
+                        <th>SQL Time (Seconds)</th>
+                        <th>ORM Time (Seconds)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(log,i) in logs">
+                        <td>{{ log.time.toLocaleTimeString() }}</td>
+                        <td>{{ log.description }}</td>
+                        <td>{{ log.sqlTime.toFixed(6) }}</td>
+                        <td>{{ log.ormTime.toFixed(6) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/db-client-stub.js"></script>
+    <script src="js/db-client-real.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

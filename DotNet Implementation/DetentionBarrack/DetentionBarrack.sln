@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31129.286
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DetentionBarrack", "DetentionBarrack\DetentionBarrack.csproj", "{F8B7D93F-4103-452B-88A1-4B63E9957DC2}"
+	ProjectSection(ProjectDependencies) = postProject
+		{CC80BCBF-575A-49A7-80A1-67EF406CB008} = {CC80BCBF-575A-49A7-80A1-67EF406CB008}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DetentionBarrackSetup", "DetentionBarrackSetup\DetentionBarrackSetup.csproj", "{CC80BCBF-575A-49A7-80A1-67EF406CB008}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F8B7D93F-4103-452B-88A1-4B63E9957DC2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8B7D93F-4103-452B-88A1-4B63E9957DC2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8B7D93F-4103-452B-88A1-4B63E9957DC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8B7D93F-4103-452B-88A1-4B63E9957DC2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC80BCBF-575A-49A7-80A1-67EF406CB008}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC80BCBF-575A-49A7-80A1-67EF406CB008}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC80BCBF-575A-49A7-80A1-67EF406CB008}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC80BCBF-575A-49A7-80A1-67EF406CB008}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C50E0BC6-B9CC-4FAA-A74D-C862A5EDB433}
+	EndGlobalSection
+EndGlobal
